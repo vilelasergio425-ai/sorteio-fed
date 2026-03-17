@@ -63,6 +63,11 @@ export async function getCampaigns() {
   return adminFetch('/campaigns');
 }
 
+// WhatsApp Logs
+export async function getWhatsappLogs() {
+  return adminFetch('/whatsapp-logs');
+}
+
 // Pixels
 export async function getPixels() {
   return adminFetch('/pixels');

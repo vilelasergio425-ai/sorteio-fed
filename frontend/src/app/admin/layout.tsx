@@ -7,6 +7,7 @@ const navItems = [
   { href: '/admin', label: 'Overview' },
   { href: '/admin/leads', label: 'Leads' },
   { href: '/admin/campaigns', label: 'Campanhas' },
+  { href: '/admin/whatsapp', label: 'WhatsApp Logs' },
   { href: '/admin/pixels', label: 'Pixels' },
 ];
 
