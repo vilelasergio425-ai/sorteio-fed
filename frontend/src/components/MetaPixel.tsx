@@ -3,13 +3,11 @@
 import { useEffect, useState } from 'react';
 import Script from 'next/script';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-
 export default function MetaPixel() {
   const [pixelIds, setPixelIds] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch(`${API_URL}/pixels/active`)
+    fetch('/api/pixels/active')
       .then((res) => (res.ok ? res.json() : []))
       .then((ids: string[]) => setPixelIds(ids))
       .catch(() => setPixelIds([]));
