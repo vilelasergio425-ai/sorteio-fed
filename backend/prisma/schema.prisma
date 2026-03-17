@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Lead {
+  id         String   @id @default(uuid())
+  nome       String
+  email      String
+  telefone   String
+  telefoneRaw String  @map("telefone_raw")
+  confirmado Boolean  @default(false)
+  ip         String?
+  userAgent  String?  @map("user_agent") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  numbers       LeadNumber[]
+  access        LeadAccess?
+  utms          UtmTracking?
+  whatsappLogs  WhatsappLog[]
+  confirmations Confirmation[]
+
+  @@map("leads")
+}
+
+model LeadNumber {
+  id     String @id @default(uuid())
+  leadId String @map("lead_id")
+  numero Int
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_numbers")
+}
+
+model LeadAccess {
+  id     String @id @default(uuid())
+  leadId String @unique @map("lead_id")
+  token  String @unique
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_accesses")
+}
+
+model UtmTracking {
+  id          String  @id @default(uuid())
+  leadId      String  @unique @map("lead_id")
+  utmSource   String? @map("utm_source")
+  utmMedium   String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
+  utmContent  String? @map("utm_content")
+  utmTerm     String? @map("utm_term")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("utm_trackings")
+}
+
+model WhatsappLog {
+  id        String   @id @default(uuid())
+  leadId    String   @map("lead_id")
+  status    String
+  payload   Json
+  response  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("whatsapp_logs")
+}
+
+model MetaPixel {
+  id        String   @id @default(uuid())
+  pixelId   String   @unique @map("pixel_id")
+  nome      String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("meta_pixels")
+}
+
+model Confirmation {
+  id          String   @id @default(uuid())
+  leadId      String   @map("lead_id")
+  confirmedAt DateTime @default(now()) @map("confirmed_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("confirmations")
+}
