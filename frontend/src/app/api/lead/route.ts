@@ -39,6 +39,9 @@ export async function POST(req: NextRequest) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const userAgent = req.headers.get('user-agent') || undefined;
 
+    // Find active sorteio
+    const sorteioAtivo = await prisma.sorteio.findFirst({ where: { ativo: true } });
+
     const lead = await prisma.lead.create({
       data: {
         nome,
@@ -48,6 +51,7 @@ export async function POST(req: NextRequest) {
         confirmado: true,
         ip,
         userAgent,
+        sorteioId: sorteioAtivo?.id || null,
         numbers: {
           createMany: {
             data: numbers.map((n) => ({ numero: n })),

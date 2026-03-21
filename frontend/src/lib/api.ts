@@ -113,3 +113,43 @@ export async function deletePixel(id: string) {
   if (!res.ok) throw new Error('Erro ao deletar pixel');
   return res.json();
 }
+
+// Sorteios
+export async function getSorteios() {
+  return adminFetch('/sorteios');
+}
+
+export async function finalizarSorteio(
+  id: string,
+  data: { numeroGanhador: number; iniciarNovo: boolean },
+) {
+  const res = await fetch(`${API_URL}/admin/sorteios/${id}/finalizar`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ADMIN_API_KEY,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Erro ao finalizar sorteio');
+  }
+  return res.json();
+}
+
+export async function envioMassa(id: string, templateName: string) {
+  const res = await fetch(`${API_URL}/admin/sorteios/${id}/envio-massa`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ADMIN_API_KEY,
+    },
+    body: JSON.stringify({ templateName }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Erro ao enviar em massa');
+  }
+  return res.json();
+}

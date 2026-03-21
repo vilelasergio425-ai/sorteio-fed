@@ -6,6 +6,20 @@ datasource db {
   provider = "postgresql"
 }
 
+model Sorteio {
+  id             String    @id @default(uuid())
+  numero         Int       @unique @default(autoincrement())
+  nome           String
+  numeroGanhador Int?      @map("numero_ganhador")
+  ativo          Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  finalizadoAt   DateTime? @map("finalizado_at")
+
+  leads Lead[]
+
+  @@map("sorteios")
+}
+
 model Lead {
   id         String   @id @default(uuid())
   nome       String
@@ -15,14 +29,17 @@ model Lead {
   confirmado Boolean  @default(false)
   ip         String?
   userAgent  String?  @map("user_agent")
+  sorteioId  String?  @map("sorteio_id")
   createdAt  DateTime @default(now()) @map("created_at")
 
+  sorteio       Sorteio?       @relation(fields: [sorteioId], references: [id])
   numbers       LeadNumber[]
   access        LeadAccess?
   utms          UtmTracking?
   whatsappLogs  WhatsappLog[]
   confirmations Confirmation[]
 
+  @@index([sorteioId])
   @@map("leads")
 }
 
