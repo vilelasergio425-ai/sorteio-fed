@@ -29,7 +29,6 @@ export async function sendWhatsAppMessage(
           type: 'body',
           parameters: [
             { type: 'text', text: nome },
-            { type: 'text', text: link },
           ],
         },
       ],
@@ -38,7 +37,7 @@ export async function sendWhatsAppMessage(
 
   try {
     const res = await fetch(
-      `https://graph.facebook.com/v21.0/${phoneId}/messages`,
+      `https://graph.facebook.com/v22.0/${phoneId}/messages`,
       {
         method: 'POST',
         headers: {
