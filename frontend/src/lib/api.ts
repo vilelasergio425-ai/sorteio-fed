@@ -16,12 +16,15 @@ export async function createLead(data: {
     body: JSON.stringify(data),
   });
 
+  const result = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || 'Erro ao criar lead');
+    const err = new Error(result.message || 'Erro ao criar lead') as Error & { alreadyRegistered?: boolean };
+    if (result.alreadyRegistered) err.alreadyRegistered = true;
+    throw err;
   }
 
-  return res.json();
+  return result;
 }
 
 export async function getParticipant(token: string) {

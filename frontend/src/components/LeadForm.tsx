@@ -27,6 +27,7 @@ function formatPhone(value: string): string {
 export default function LeadForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [error, setError] = useState('');
 
   const {
@@ -58,13 +59,31 @@ export default function LeadForm() {
         trackLead({ nome: data.nome, email: data.email, telefone: data.telefone });
         setSuccess(true);
       } catch (err: any) {
-        setError(err.message || 'Erro ao participar. Tente novamente.');
+        if (err.alreadyRegistered) {
+          setAlreadyRegistered(true);
+        } else {
+          setError(err.message || 'Erro ao participar. Tente novamente.');
+        }
       } finally {
         setLoading(false);
       }
     },
     [loading],
   );
+
+  if (alreadyRegistered) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 text-center">
+        <div className="text-5xl mb-4">📱</div>
+        <h3 className="text-2xl font-bold text-yellow-800 mb-2">
+          Você já está participando!
+        </h3>
+        <p className="text-yellow-700">
+          Você já se cadastrou no sorteio. Confira sua participação no WhatsApp!
+        </p>
+      </div>
+    );
+  }
 
   if (success) {
     return (

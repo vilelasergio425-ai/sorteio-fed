@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     return NextResponse.json({
-      leads,
+      data: leads,
       total,
       page,
       totalPages: Math.ceil(total / limit),

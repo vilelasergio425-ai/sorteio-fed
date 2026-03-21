@@ -14,6 +14,25 @@ export async function POST(req: NextRequest) {
     }
 
     const telefoneRaw = telefone.replace(/\D/g, '');
+    const testNumber = '62997021311';
+    const isTestNumber = telefoneRaw === testNumber || telefoneRaw === `55${testNumber}`;
+
+    // Check if phone already registered (skip for test number)
+    if (!isTestNumber) {
+      const existing = await prisma.lead.findFirst({
+        where: { telefoneRaw },
+        include: { access: true },
+      });
+
+      if (existing) {
+        return NextResponse.json({
+          success: false,
+          alreadyRegistered: true,
+          message: 'Você já está cadastrado no sorteio! Confira sua participação no WhatsApp.',
+        }, { status: 409 });
+      }
+    }
+
     const token = uuidv4();
     const numbers = generateNumbers();
 
