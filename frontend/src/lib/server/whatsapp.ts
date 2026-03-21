@@ -8,7 +8,7 @@ export async function sendWhatsAppMessage(
 ) {
   const token = process.env.WHATSAPP_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_ID;
-  const templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'sorteio_numeros';
+  const templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'sorteio_quarta';
 
   if (!token || !phoneId) {
     console.log('WhatsApp not configured, skipping message');
