@@ -28,7 +28,7 @@ export async function sendWhatsAppMessage(
         {
           type: 'body',
           parameters: [
-            { type: 'text', text: nome },
+            { type: 'text', text: link },
           ],
         },
       ],
