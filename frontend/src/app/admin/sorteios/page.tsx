@@ -27,8 +27,34 @@ export default function SorteiosPage() {
   // Envio em massa form
   const [templateName, setTemplateName] = useState('');
   const [envioSorteioId, setEnvioSorteioId] = useState('');
+  const [selectedParams, setSelectedParams] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [envioResult, setEnvioResult] = useState('');
+
+  const availableParams = [
+    { key: 'nome', label: 'Nome' },
+    { key: 'email', label: 'Email' },
+    { key: 'telefone', label: 'Telefone' },
+    { key: 'token', label: 'Token' },
+    { key: 'url', label: 'URL dos numeros' },
+    { key: 'numero_sorteado', label: 'Numero sorteado' },
+  ];
+
+  const addParam = (key: string) => {
+    setSelectedParams([...selectedParams, key]);
+  };
+
+  const removeParam = (index: number) => {
+    setSelectedParams(selectedParams.filter((_, i) => i !== index));
+  };
+
+  const moveParam = (index: number, direction: 'up' | 'down') => {
+    const newParams = [...selectedParams];
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= newParams.length) return;
+    [newParams[index], newParams[target]] = [newParams[target], newParams[index]];
+    setSelectedParams(newParams);
+  };
 
   const fetchSorteios = () => {
     setLoading(true);
@@ -84,12 +110,16 @@ export default function SorteiosPage() {
       setEnvioResult('Selecione um sorteio e informe o template');
       return;
     }
+    if (selectedParams.length === 0) {
+      setEnvioResult('Adicione pelo menos um parâmetro');
+      return;
+    }
 
     setEnviando(true);
     setEnvioResult('Enviando mensagens... Isso pode levar alguns minutos.');
 
     try {
-      const result = await envioMassa(envioSorteioId, templateName);
+      const result = await envioMassa(envioSorteioId, templateName, selectedParams);
       setEnvioResult(
         `Envio concluído! ${result.enviados} enviados, ${result.falhas} falhas, de ${result.total} total.`,
       );
@@ -224,15 +254,75 @@ export default function SorteiosPage() {
               className="bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm w-56"
             />
           </div>
-
-          <button
-            onClick={handleEnvioMassa}
-            disabled={enviando}
-            className="bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-          >
-            {enviando ? 'Enviando...' : 'Enviar para Todos'}
-          </button>
         </div>
+
+        {/* Parameter Selection */}
+        <div>
+          <label className="text-gray-400 text-xs block mb-2">
+            Parametros do template (na ordem do template)
+          </label>
+
+          {/* Selected params */}
+          {selectedParams.length > 0 && (
+            <div className="space-y-1 mb-3">
+              {selectedParams.map((param, index) => {
+                const label = availableParams.find((p) => p.key === param)?.label || param;
+                return (
+                  <div
+                    key={`${param}-${index}`}
+                    className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2"
+                  >
+                    <span className="text-orange-400 font-mono text-xs w-6">
+                      {`{{${index + 1}}}`}
+                    </span>
+                    <span className="text-white text-sm flex-1">{label}</span>
+                    <button
+                      onClick={() => moveParam(index, 'up')}
+                      disabled={index === 0}
+                      className="text-gray-500 hover:text-white disabled:opacity-30 text-xs"
+                    >
+                      &#9650;
+                    </button>
+                    <button
+                      onClick={() => moveParam(index, 'down')}
+                      disabled={index === selectedParams.length - 1}
+                      className="text-gray-500 hover:text-white disabled:opacity-30 text-xs"
+                    >
+                      &#9660;
+                    </button>
+                    <button
+                      onClick={() => removeParam(index)}
+                      className="text-red-400 hover:text-red-300 text-xs ml-1"
+                    >
+                      &#10005;
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Add param buttons */}
+          <div className="flex flex-wrap gap-2">
+            {availableParams.map((param) => (
+              <button
+                key={param.key}
+                onClick={() => addParam(param.key)}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition border border-gray-700"
+              >
+                + {param.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={handleEnvioMassa}
+          disabled={enviando}
+          className="bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+        >
+          {enviando ? 'Enviando...' : 'Enviar para Todos'}
+        </button>
 
         {envioResult && (
           <p
@@ -245,8 +335,9 @@ export default function SorteiosPage() {
         )}
 
         <p className="text-gray-500 text-xs">
-          Envia o template escolhido para todos os leads do sorteio selecionado. O
-          parametro enviado no body sera o nome do lead. Delay de 1s entre envios.
+          Adicione os parametros na mesma ordem que estao no template da Meta. Cada
+          parametro adicionado corresponde a um {'{{1}}'}, {'{{2}}'}, etc. Delay de 1s entre
+          envios.
         </p>
       </div>
 

@@ -138,14 +138,14 @@ export async function finalizarSorteio(
   return res.json();
 }
 
-export async function envioMassa(id: string, templateName: string) {
+export async function envioMassa(id: string, templateName: string, parametros: string[]) {
   const res = await fetch(`${API_URL}/admin/sorteios/${id}/envio-massa`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': ADMIN_API_KEY,
     },
-    body: JSON.stringify({ templateName }),
+    body: JSON.stringify({ templateName, parametros }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
