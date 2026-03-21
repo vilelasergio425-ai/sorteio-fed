@@ -138,6 +138,27 @@ export async function finalizarSorteio(
   return res.json();
 }
 
+export async function envioTeste(
+  id: string,
+  templateName: string,
+  parametros: string[],
+  telefone: string,
+) {
+  const res = await fetch(`${API_URL}/admin/sorteios/${id}/envio-teste`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ADMIN_API_KEY,
+    },
+    body: JSON.stringify({ templateName, parametros, telefone }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Erro ao enviar teste');
+  }
+  return res.json();
+}
+
 export async function envioMassa(id: string, templateName: string, parametros: string[]) {
   const res = await fetch(`${API_URL}/admin/sorteios/${id}/envio-massa`, {
     method: 'POST',

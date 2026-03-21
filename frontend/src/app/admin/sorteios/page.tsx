@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSorteios, finalizarSorteio, envioMassa } from '@/lib/api';
+import { getSorteios, finalizarSorteio, envioMassa, envioTeste } from '@/lib/api';
 
 interface Sorteio {
   id: string;
@@ -31,13 +31,17 @@ export default function SorteiosPage() {
   const [enviando, setEnviando] = useState(false);
   const [envioResult, setEnvioResult] = useState('');
 
+  // Envio teste
+  const [testPhone, setTestPhone] = useState('5562997021311');
+  const [testando, setTestando] = useState(false);
+  const [testResult, setTestResult] = useState('');
+
   const availableParams = [
-    { key: 'nome', label: 'Nome' },
-    { key: 'email', label: 'Email' },
-    { key: 'telefone', label: 'Telefone' },
-    { key: 'token', label: 'Token' },
-    { key: 'url', label: 'URL dos numeros' },
-    { key: 'numero_sorteado', label: 'Numero sorteado' },
+    { key: 'nome', label: 'Nome', hint: 'Nome do lead' },
+    { key: 'email', label: 'Email', hint: 'Email do lead' },
+    { key: 'telefone', label: 'Telefone', hint: '(62) 99702-1311' },
+    { key: 'url', label: 'URL dos numeros', hint: 'https://caminhopremiado.com/p/...' },
+    { key: 'numero_sorteado', label: 'Numero sorteado', hint: '55638' },
   ];
 
   const addParam = (key: string) => {
@@ -73,13 +77,13 @@ export default function SorteiosPage() {
   const handleFinalizar = async () => {
     if (!sorteioAtivo) return;
     if (!numeroGanhador) {
-      setFinResult('Informe o número ganhador');
+      setFinResult('Informe o numero ganhador');
       return;
     }
 
     const num = parseInt(numeroGanhador);
     if (isNaN(num) || num < 0 || num > 99999) {
-      setFinResult('Número deve ser entre 0 e 99999');
+      setFinResult('Numero deve ser entre 0 e 99999');
       return;
     }
 
@@ -92,7 +96,7 @@ export default function SorteiosPage() {
         iniciarNovo,
       });
       setFinResult(
-        `Sorteio finalizado! ${result.leadsAtualizados} leads atualizados com o número ${String(num).padStart(5, '0')}.${
+        `Sorteio finalizado! ${result.leadsAtualizados} leads atualizados com o numero ${String(num).padStart(5, '0')}.${
           result.novoSorteio ? ` Novo sorteio "${result.novoSorteio.nome}" criado.` : ''
         }`,
       );
@@ -105,13 +109,40 @@ export default function SorteiosPage() {
     }
   };
 
+  const handleEnvioTeste = async () => {
+    if (!envioSorteioId || !templateName || selectedParams.length === 0) {
+      setTestResult('Configure o sorteio, template e parametros primeiro');
+      return;
+    }
+    if (!testPhone) {
+      setTestResult('Informe o numero de teste');
+      return;
+    }
+
+    setTestando(true);
+    setTestResult('Enviando teste...');
+
+    try {
+      const result = await envioTeste(envioSorteioId, templateName, selectedParams, testPhone);
+      if (result.status === 'sent') {
+        setTestResult('Teste enviado com sucesso! Confira no WhatsApp.');
+      } else {
+        setTestResult(`Falha no teste: ${JSON.stringify(result.response?.error?.message || result.response)}`);
+      }
+    } catch (err: any) {
+      setTestResult(`Erro: ${err.message}`);
+    } finally {
+      setTestando(false);
+    }
+  };
+
   const handleEnvioMassa = async () => {
     if (!envioSorteioId || !templateName) {
       setEnvioResult('Selecione um sorteio e informe o template');
       return;
     }
     if (selectedParams.length === 0) {
-      setEnvioResult('Adicione pelo menos um parâmetro');
+      setEnvioResult('Adicione pelo menos um parametro');
       return;
     }
 
@@ -121,7 +152,7 @@ export default function SorteiosPage() {
     try {
       const result = await envioMassa(envioSorteioId, templateName, selectedParams);
       setEnvioResult(
-        `Envio concluído! ${result.enviados} enviados, ${result.falhas} falhas, de ${result.total} total.`,
+        `Envio concluido! ${result.enviados} enviados, ${result.falhas} falhas, de ${result.total} total.`,
       );
     } catch (err: any) {
       setEnvioResult(`Erro: ${err.message}`);
@@ -215,7 +246,7 @@ export default function SorteiosPage() {
       {!sorteioAtivo && (
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6">
           <p className="text-yellow-400 font-semibold">
-            Nenhum sorteio ativo. Finalize o sorteio atual com "Iniciar novo sorteio"
+            Nenhum sorteio ativo. Finalize o sorteio atual com &quot;Iniciar novo sorteio&quot;
             marcado para criar um novo.
           </p>
         </div>
@@ -262,20 +293,20 @@ export default function SorteiosPage() {
             Parametros do template (na ordem do template)
           </label>
 
-          {/* Selected params */}
           {selectedParams.length > 0 && (
             <div className="space-y-1 mb-3">
               {selectedParams.map((param, index) => {
-                const label = availableParams.find((p) => p.key === param)?.label || param;
+                const info = availableParams.find((p) => p.key === param);
                 return (
                   <div
                     key={`${param}-${index}`}
                     className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2"
                   >
-                    <span className="text-orange-400 font-mono text-xs w-6">
+                    <span className="text-orange-400 font-mono text-xs w-12">
                       {`{{${index + 1}}}`}
                     </span>
-                    <span className="text-white text-sm flex-1">{label}</span>
+                    <span className="text-white text-sm">{info?.label || param}</span>
+                    <span className="text-gray-500 text-xs flex-1">({info?.hint})</span>
                     <button
                       onClick={() => moveParam(index, 'up')}
                       disabled={index === 0}
@@ -302,7 +333,6 @@ export default function SorteiosPage() {
             </div>
           )}
 
-          {/* Add param buttons */}
           <div className="flex flex-wrap gap-2">
             {availableParams.map((param) => (
               <button
@@ -316,6 +346,43 @@ export default function SorteiosPage() {
           </div>
         </div>
 
+        {/* Envio Teste */}
+        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 space-y-3">
+          <h3 className="text-white font-semibold text-sm">Enviar Teste</h3>
+          <p className="text-gray-500 text-xs">
+            Envia 1 mensagem de teste para o numero abaixo com dados de um lead aleatorio do sorteio.
+          </p>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div>
+              <label className="text-gray-400 text-xs block mb-1">Numero de teste</label>
+              <input
+                type="text"
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+                placeholder="5562997021311"
+                className="bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm w-48"
+              />
+            </div>
+            <button
+              onClick={handleEnvioTeste}
+              disabled={testando}
+              className="bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+            >
+              {testando ? 'Enviando...' : 'Enviar Teste'}
+            </button>
+          </div>
+          {testResult && (
+            <p
+              className={`text-sm ${
+                testResult.includes('sucesso') ? 'text-green-400' : 'text-yellow-400'
+              }`}
+            >
+              {testResult}
+            </p>
+          )}
+        </div>
+
+        {/* Envio em massa button */}
         <button
           onClick={handleEnvioMassa}
           disabled={enviando}
@@ -335,9 +402,8 @@ export default function SorteiosPage() {
         )}
 
         <p className="text-gray-500 text-xs">
-          Adicione os parametros na mesma ordem que estao no template da Meta. Cada
-          parametro adicionado corresponde a um {'{{1}}'}, {'{{2}}'}, etc. Delay de 1s entre
-          envios.
+          Adicione os parametros na mesma ordem do template da Meta. Max 30 caracteres por
+          parametro. Delay de 1s entre envios.
         </p>
       </div>
 
