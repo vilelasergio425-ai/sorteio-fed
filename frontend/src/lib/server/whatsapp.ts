@@ -1,5 +1,21 @@
 import { prisma } from './prisma';
 
+async function fetchWithRetry(url: string, options: RequestInit, retries = 2): Promise<Response> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeout);
+      return res;
+    } catch (error) {
+      if (i === retries) throw error;
+      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+  throw new Error('fetch failed after retries');
+}
+
 export async function sendWhatsAppMessage(
   leadId: string,
   nome: string,
@@ -36,7 +52,7 @@ export async function sendWhatsAppMessage(
   };
 
   try {
-    const res = await fetch(
+    const res = await fetchWithRetry(
       `https://graph.facebook.com/v22.0/${phoneId}/messages`,
       {
         method: 'POST',
