@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server/prisma';
 import { generateNumbers } from '@/lib/server/numbers';
 import { sendWhatsAppMessage } from '@/lib/server/whatsapp';
-import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const token = uuidv4();
+    const token = randomBytes(8).toString('hex'); // 16 chars
     const numbers = generateNumbers();
 
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
