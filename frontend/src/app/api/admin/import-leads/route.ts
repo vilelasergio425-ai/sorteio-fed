@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
         const lead = await prisma.lead.create({
           data: {
             nome,
-            email: email || null,
+            email: email || '',
             telefone,
             telefoneRaw,
             confirmado: true,
