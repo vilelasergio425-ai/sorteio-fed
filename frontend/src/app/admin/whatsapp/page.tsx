@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react';
 import { getWhatsappLogs } from '@/lib/api';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY || '';
+
 interface WhatsappLog {
   id: string;
+  leadId: string;
   status: string;
   payload: Record<string, unknown>;
   response: Record<string, unknown> | null;
@@ -20,6 +24,27 @@ export default function WhatsappLogsPage() {
   const [logs, setLogs] = useState<WhatsappLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState<string | null>(null);
+  const [retryResult, setRetryResult] = useState<Record<string, string>>({});
+
+  const handleRetry = async (leadId: string) => {
+    setRetrying(leadId);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/whatsapp-retry-single`, {
+        method: 'POST',
+        headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId }),
+      });
+      const data = await res.json();
+      setRetryResult((prev) => ({ ...prev, [leadId]: data.success ? 'ok' : 'fail' }));
+      // Reload logs
+      getWhatsappLogs().then(setLogs).catch(console.error);
+    } catch {
+      setRetryResult((prev) => ({ ...prev, [leadId]: 'fail' }));
+    } finally {
+      setRetrying(null);
+    }
+  };
 
   useEffect(() => {
     getWhatsappLogs()
@@ -73,11 +98,28 @@ export default function WhatsappLogsPage() {
                     <p className="text-gray-500 text-xs">{log.lead.telefone}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-gray-500 text-xs">
-                    {new Date(log.createdAt).toLocaleString('pt-BR')}
-                  </p>
-                  <p className="text-gray-600 text-xs">{expandedId === log.id ? '▲' : '▼'}</p>
+                <div className="flex items-center gap-3">
+                  {(log.status === 'error' || log.status === 'failed') && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRetry(log.leadId); }}
+                      disabled={retrying === log.leadId}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                        retryResult[log.leadId] === 'ok'
+                          ? 'bg-green-500/20 text-green-400'
+                          : retryResult[log.leadId] === 'fail'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
+                      }`}
+                    >
+                      {retrying === log.leadId ? 'Reenviando...' : retryResult[log.leadId] === 'ok' ? 'Reenviado!' : retryResult[log.leadId] === 'fail' ? 'Falhou - Tentar' : 'Reenviar'}
+                    </button>
+                  )}
+                  <div className="text-right">
+                    <p className="text-gray-500 text-xs">
+                      {new Date(log.createdAt).toLocaleString('pt-BR')}
+                    </p>
+                    <p className="text-gray-600 text-xs">{expandedId === log.id ? '▲' : '▼'}</p>
+                  </div>
                 </div>
               </div>
 

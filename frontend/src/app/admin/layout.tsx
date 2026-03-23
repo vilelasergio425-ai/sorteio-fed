@@ -9,6 +9,7 @@ const navItems = [
   { href: '/admin/leads', label: 'Leads' },
   { href: '/admin/campaigns', label: 'Campanhas' },
   { href: '/admin/whatsapp', label: 'WhatsApp Logs' },
+  { href: '/admin/importar', label: 'Importar CSV' },
   { href: '/admin/pixels', label: 'Pixels' },
 ];
 
