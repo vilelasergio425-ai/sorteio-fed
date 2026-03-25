@@ -12,10 +12,11 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { templateName, parametros, telefone } = body as {
+    const { templateName, parametros, telefone, customValues } = body as {
       templateName: string;
       parametros: string[];
       telefone: string;
+      customValues?: Record<number, string>;
     };
 
     if (!templateName || !parametros?.length || !telefone) {
@@ -72,9 +73,11 @@ export async function POST(
       numero_sorteado: numeroSorteado,
     };
 
-    const templateParams = parametros.map((p) => ({
+    const templateParams = parametros.map((p, index) => ({
       type: 'text' as const,
-      text: paramValues[p] || '',
+      text: p.startsWith('custom_')
+        ? (customValues?.[index] || '')
+        : (paramValues[p] || ''),
     }));
 
     const phone = telefone.replace(/\D/g, '');

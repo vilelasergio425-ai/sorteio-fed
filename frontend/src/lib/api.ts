@@ -143,6 +143,7 @@ export async function envioTeste(
   templateName: string,
   parametros: string[],
   telefone: string,
+  customValues?: Record<number, string>,
 ) {
   const res = await fetch(`${API_URL}/admin/sorteios/${id}/envio-teste`, {
     method: 'POST',
@@ -150,7 +151,7 @@ export async function envioTeste(
       'Content-Type': 'application/json',
       'x-api-key': ADMIN_API_KEY,
     },
-    body: JSON.stringify({ templateName, parametros, telefone }),
+    body: JSON.stringify({ templateName, parametros, telefone, customValues }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -159,14 +160,19 @@ export async function envioTeste(
   return res.json();
 }
 
-export async function envioMassa(id: string, templateName: string, parametros: string[]) {
+export async function envioMassa(
+  id: string,
+  templateName: string,
+  parametros: string[],
+  customValues?: Record<number, string>,
+) {
   const res = await fetch(`${API_URL}/admin/sorteios/${id}/envio-massa`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': ADMIN_API_KEY,
     },
-    body: JSON.stringify({ templateName, parametros }),
+    body: JSON.stringify({ templateName, parametros, customValues }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

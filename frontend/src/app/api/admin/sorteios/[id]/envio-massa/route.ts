@@ -12,9 +12,10 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { templateName, parametros } = body as {
+    const { templateName, parametros, customValues } = body as {
       templateName: string;
-      parametros: string[]; // e.g. ['nome', 'email', 'telefone', 'token', 'url', 'numero_sorteado']
+      parametros: string[];
+      customValues?: Record<number, string>;
     };
 
     if (!templateName) {
@@ -78,9 +79,11 @@ export async function POST(
         numero_sorteado: numeroSorteado,
       };
 
-      const templateParams = parametros.map((p) => ({
+      const templateParams = parametros.map((p, index) => ({
         type: 'text' as const,
-        text: paramValues[p] || '',
+        text: p.startsWith('custom_')
+          ? (customValues?.[index] || '')
+          : (paramValues[p] || ''),
       }));
 
       const payload = {

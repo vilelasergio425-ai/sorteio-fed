@@ -36,6 +36,9 @@ export default function SorteiosPage() {
   const [testando, setTestando] = useState(false);
   const [testResult, setTestResult] = useState('');
 
+  // Custom params
+  const [customValues, setCustomValues] = useState<Record<number, string>>({});
+
   const availableParams = [
     { key: 'nome', label: 'Nome', hint: 'Nome do lead' },
     { key: 'email', label: 'Email', hint: 'Email do lead' },
@@ -45,11 +48,24 @@ export default function SorteiosPage() {
   ];
 
   const addParam = (key: string) => {
-    setSelectedParams([...selectedParams, key]);
+    if (key === 'custom') {
+      const customIndex = selectedParams.length;
+      setSelectedParams([...selectedParams, `custom_${customIndex}`]);
+      setCustomValues({ ...customValues, [customIndex]: '' });
+    } else {
+      setSelectedParams([...selectedParams, key]);
+    }
   };
 
   const removeParam = (index: number) => {
+    const newCustom = { ...customValues };
+    delete newCustom[index];
+    setCustomValues(newCustom);
     setSelectedParams(selectedParams.filter((_, i) => i !== index));
+  };
+
+  const updateCustomValue = (index: number, value: string) => {
+    setCustomValues({ ...customValues, [index]: value });
   };
 
   const moveParam = (index: number, direction: 'up' | 'down') => {
@@ -123,7 +139,7 @@ export default function SorteiosPage() {
     setTestResult('Enviando teste...');
 
     try {
-      const result = await envioTeste(envioSorteioId, templateName, selectedParams, testPhone);
+      const result = await envioTeste(envioSorteioId, templateName, selectedParams, testPhone, customValues);
       if (result.status === 'sent') {
         setTestResult('Teste enviado com sucesso! Confira no WhatsApp.');
       } else {
@@ -150,7 +166,7 @@ export default function SorteiosPage() {
     setEnvioResult('Enviando mensagens... Isso pode levar alguns minutos.');
 
     try {
-      const result = await envioMassa(envioSorteioId, templateName, selectedParams);
+      const result = await envioMassa(envioSorteioId, templateName, selectedParams, customValues);
       setEnvioResult(
         `Envio concluido! ${result.enviados} enviados, ${result.falhas} falhas, de ${result.total} total.`,
       );
@@ -296,6 +312,7 @@ export default function SorteiosPage() {
           {selectedParams.length > 0 && (
             <div className="space-y-1 mb-3">
               {selectedParams.map((param, index) => {
+                const isCustom = param.startsWith('custom_');
                 const info = availableParams.find((p) => p.key === param);
                 return (
                   <div
@@ -305,8 +322,23 @@ export default function SorteiosPage() {
                     <span className="text-orange-400 font-mono text-xs w-12">
                       {`{{${index + 1}}}`}
                     </span>
-                    <span className="text-white text-sm">{info?.label || param}</span>
-                    <span className="text-gray-500 text-xs flex-1">({info?.hint})</span>
+                    {isCustom ? (
+                      <>
+                        <span className="text-purple-400 text-sm font-medium">Personalizado:</span>
+                        <input
+                          type="text"
+                          value={customValues[index] || ''}
+                          onChange={(e) => updateCustomValue(index, e.target.value)}
+                          placeholder="Digite o valor (ex: link, texto...)"
+                          className="bg-gray-700 border border-gray-600 text-white rounded px-2 py-1 text-sm flex-1"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-white text-sm">{info?.label || param}</span>
+                        <span className="text-gray-500 text-xs flex-1">({info?.hint})</span>
+                      </>
+                    )}
                     <button
                       onClick={() => moveParam(index, 'up')}
                       disabled={index === 0}
@@ -343,6 +375,12 @@ export default function SorteiosPage() {
                 + {param.label}
               </button>
             ))}
+            <button
+              onClick={() => addParam('custom')}
+              className="bg-purple-900/50 hover:bg-purple-800/50 text-purple-300 hover:text-purple-200 px-3 py-1.5 rounded-lg text-xs font-medium transition border border-purple-700"
+            >
+              + Personalizado
+            </button>
           </div>
         </div>
 
