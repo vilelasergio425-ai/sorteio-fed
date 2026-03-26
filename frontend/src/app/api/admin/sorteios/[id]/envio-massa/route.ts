@@ -82,8 +82,8 @@ export async function POST(
     let falhas = 0;
     let pulados = sentLeadIds.size;
 
-    // Process up to 40 leads per request to stay within timeout
-    const BATCH_SIZE = 40;
+    // Process up to 8 leads per request (Vercel free = 10s timeout)
+    const BATCH_SIZE = 8;
     const batch = leadsToSend.slice(0, BATCH_SIZE);
     const remaining = leadsToSend.length - batch.length;
 
@@ -163,7 +163,7 @@ export async function POST(
       }
 
       // Delay between sends
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
     return NextResponse.json({
