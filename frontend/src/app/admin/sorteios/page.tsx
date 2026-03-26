@@ -163,15 +163,40 @@ export default function SorteiosPage() {
     }
 
     setEnviando(true);
-    setEnvioResult('Enviando mensagens... Isso pode levar alguns minutos.');
+    let totalEnviados = 0;
+    let totalFalhas = 0;
+    let totalLeads = 0;
+    let batch = 1;
 
     try {
-      const result = await envioMassa(envioSorteioId, templateName, selectedParams, customValues);
+      let hasMore = true;
+      let pulados = 0;
+      while (hasMore) {
+        setEnvioResult(
+          `Enviando lote ${batch}... (${totalEnviados} enviados ate agora)`,
+        );
+        const result = await envioMassa(envioSorteioId, templateName, selectedParams, customValues, true);
+        totalEnviados += result.enviados;
+        totalFalhas += result.falhas;
+        totalLeads = result.total;
+        pulados = result.pulados || 0;
+        hasMore = result.hasMore;
+        batch++;
+
+        if (hasMore) {
+          setEnvioResult(
+            `Lote ${batch - 1} concluido. ${totalEnviados} enviados, ${result.remaining} restantes. Continuando...`,
+          );
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
       setEnvioResult(
-        `Envio concluido! ${result.enviados} enviados, ${result.falhas} falhas, de ${result.total} total.`,
+        `Envio concluido! ${totalEnviados} enviados, ${totalFalhas} falhas, de ${totalLeads} total.${pulados > 0 ? ` (${pulados} ja enviados anteriormente)` : ''}`,
       );
     } catch (err: any) {
-      setEnvioResult(`Erro: ${err.message}`);
+      setEnvioResult(
+        `Erro no lote ${batch}: ${err.message}. ${totalEnviados} ja enviados. Clique "Enviar para Todos" novamente para retomar de onde parou.`,
+      );
     } finally {
       setEnviando(false);
     }
@@ -426,7 +451,7 @@ export default function SorteiosPage() {
           disabled={enviando}
           className="bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
         >
-          {enviando ? 'Enviando...' : 'Enviar para Todos'}
+          {enviando ? 'Enviando...' : 'Enviar para Todos (pula ja enviados)'}
         </button>
 
         {envioResult && (
@@ -441,7 +466,7 @@ export default function SorteiosPage() {
 
         <p className="text-gray-500 text-xs">
           Adicione os parametros na mesma ordem do template da Meta. Max 30 caracteres por
-          parametro. Delay de 1s entre envios.
+          parametro. Envia em lotes de 40. Se der erro, clique novamente para continuar de onde parou (leads ja enviados sao pulados automaticamente).
         </p>
       </div>
 

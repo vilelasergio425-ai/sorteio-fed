@@ -165,6 +165,7 @@ export async function envioMassa(
   templateName: string,
   parametros: string[],
   customValues?: Record<number, string>,
+  skipSent = true,
 ) {
   const res = await fetch(`${API_URL}/admin/sorteios/${id}/envio-massa`, {
     method: 'POST',
@@ -172,7 +173,7 @@ export async function envioMassa(
       'Content-Type': 'application/json',
       'x-api-key': ADMIN_API_KEY,
     },
-    body: JSON.stringify({ templateName, parametros, customValues }),
+    body: JSON.stringify({ templateName, parametros, customValues, skipSent }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

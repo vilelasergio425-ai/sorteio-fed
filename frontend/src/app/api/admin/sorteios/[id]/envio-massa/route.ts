@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/server/prisma';
 import { validateAdminKey } from '@/lib/server/admin-guard';
 
+export const maxDuration = 60;
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -12,10 +14,11 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { templateName, parametros, customValues } = body as {
+    const { templateName, parametros, customValues, skipSent } = body as {
       templateName: string;
       parametros: string[];
       customValues?: Record<number, string>;
+      skipSent?: boolean; // skip leads that already have a 'sent' log for this template
     };
 
     if (!templateName) {
@@ -58,10 +61,33 @@ export async function POST(
       ? String(sorteio.numeroGanhador).padStart(5, '0')
       : '00000';
 
+    // If skipSent, find leads that already have a successful 'sent' log with this template
+    let sentLeadIds = new Set<string>();
+    if (skipSent) {
+      const sentLogs = await prisma.whatsappLog.findMany({
+        where: {
+          leadId: { in: sorteio.leads.map((l) => l.id) },
+          status: 'sent',
+          payload: { path: ['template', 'name'], equals: templateName },
+        },
+        select: { leadId: true },
+        distinct: ['leadId'],
+      });
+      sentLeadIds = new Set(sentLogs.map((l) => l.leadId));
+    }
+
+    const leadsToSend = sorteio.leads.filter((l) => !sentLeadIds.has(l.id));
+
     let enviados = 0;
     let falhas = 0;
+    let pulados = sentLeadIds.size;
 
-    for (const lead of sorteio.leads) {
+    // Process up to 40 leads per request to stay within timeout
+    const BATCH_SIZE = 40;
+    const batch = leadsToSend.slice(0, BATCH_SIZE);
+    const remaining = leadsToSend.length - batch.length;
+
+    for (const lead of batch) {
       const phone = lead.telefoneRaw.startsWith('55')
         ? lead.telefoneRaw
         : `55${lead.telefoneRaw}`;
@@ -69,7 +95,6 @@ export async function POST(
       const accessToken = lead.access?.token || '';
       const url = `${baseUrl}/p/${accessToken}`;
 
-      // Build parameters in the order selected by admin
       const paramValues: Record<string, string> = {
         nome: lead.nome,
         email: lead.email,
@@ -137,8 +162,8 @@ export async function POST(
         falhas++;
       }
 
-      // Delay between sends (rate limit)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Delay between sends
+      await new Promise((resolve) => setTimeout(resolve, 800));
     }
 
     return NextResponse.json({
@@ -146,6 +171,9 @@ export async function POST(
       total: sorteio.leads.length,
       enviados,
       falhas,
+      pulados,
+      remaining,
+      hasMore: remaining > 0,
     });
   } catch (error) {
     console.error('Error sending bulk WhatsApp:', error);
